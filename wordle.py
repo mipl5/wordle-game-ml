@@ -10,24 +10,37 @@ class Wordle:
         self.guess_count = 0
 
     def do_counts(self, word:str):
-        match_list = [1 for c1, c2 in zip(self.word, word) if c1 == c2]
+        if len(word) != len(self.word):
+            print(f"Guess must be {len(self.word)} letters (got {len(word)}).")
+            return
 
-        same_pos_count = sum(match_list)
+        target = list(self.word)
+        guess = list(word)
 
-        print("Correct letters and on their places:")
-        print(f"Count: {same_pos_count}: {match_list}")
+        statuses = [None] * len(target)  # 'G' = green, 'Y' = yellow, '-' = gray
+        remaining = Counter(target)
 
-        target_counts = Counter(self.word)
-        guess_counts = Counter(word)
+        for i, (t, g) in enumerate(zip(target, guess)):
+            if t == g:
+                statuses[i] = 'G'
+                remaining[g] -= 1
 
-        common_counts = target_counts & guess_counts
+        for i, g in enumerate(guess):
+            if statuses[i] is not None:
+                continue
+            if remaining.get(g, 0) > 0:
+                statuses[i] = 'Y'
+                remaining[g] -= 1
+            else:
+                statuses[i] = '-'
 
-        total_possible_matches = sum(common_counts.values())
+        same_pos_count = statuses.count('G')
+        non_pos_count = statuses.count('Y')
 
-        non_pos_count = total_possible_matches - same_pos_count
-
-        print("\nCorrect letters but on WRONG places: ")
-        print(f'Count: {non_pos_count}')
+        print("Per-letter statuses (G=correct place, Y=wrong place, -=absent):")
+        print(' '.join(f"{ch}:{st}" for ch, st in zip(guess, statuses)))
+        print(f"Correct letters in correct place: {same_pos_count}")
+        print(f"Correct letters in wrong place: {non_pos_count}")
 
 
     def make_guess(self, word:str):
@@ -35,6 +48,8 @@ class Wordle:
             self.guess_count += 1
             if cw.check_word(word):
                 self.do_counts(word)
+                if word == self.word:
+                    print(f"Congratulations! You've guessed the word '{self.word}' correctly!")
             else:
                 print("Word doesn't exist")
         else:
